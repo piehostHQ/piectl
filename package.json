@@ -1,6 +1,6 @@
 {
   "name": "piectl",
-  "description": "Pie.host CLI",
+  "description": "Pie.host official CLI",
   "version": "1.0.0",
   "author": "Anand Singh",
   "bin": {
