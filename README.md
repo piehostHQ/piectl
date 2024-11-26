@@ -19,7 +19,7 @@ pie depoy
 
 or, if NPM bin is missing from your path, following should work.
 ```
-npx run pie deploy
+npx pie deploy
 ```
 
 For more visit [https://pie.host](https://pie.host)
