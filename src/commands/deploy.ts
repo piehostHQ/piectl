@@ -11,9 +11,11 @@ const apiHostDev = `http://piehost.test/api/v4`
 
 const apiHost = apiHostDev
 
-const projectDir = `/Users/sudoanand/Sites/samples/react-sample-private`
+const projectDir = process.cwd()
 const pieHostDir = `${projectDir}/.piehost`
 const deployConfigFile = `${pieHostDir}/deploy.json`
+
+console.log(`Deploying: ${projectDir}`)
 
 export default class Deploy extends Command {
   static override args = {
@@ -48,19 +50,21 @@ export default class Deploy extends Command {
       if (!fs.existsSync(pieHostDir) || !fs.existsSync(deployConfigFile)) {
         this.initializeProject()
       } else {
-        this.deploy()
+        this.deploy(null)
       }
     } catch (e) {}
   }
 
-  public async deploy() {
+  public async deploy(authToken: any) {
     console.log('\n')
     console.log(`Make sure you have pushed the changes on git`)
     console.log(`Lastest changes from git will be deployed`)
     console.log(`If you have configured webhook, there is no need to run this command`)
     console.log(`You can see all deployments at https://pie.host`)
     console.log('\n')
-    var authToken: string = await this.authenticate()
+    if(authToken == null){
+      authToken = await this.authenticate()
+    }
     var projectId = this.getProjectConfig('uuid')
 
     var deploy = await this.doDeploy(authToken, projectId, null, null)
@@ -188,6 +192,30 @@ export default class Deploy extends Command {
       ],
     })
 
+    if (answer == 'new') {
+      this.setupNewProject()
+    } else {
+      this.setupExistingProject()
+    }
+  }
+
+  public async setupExistingProject() {
+    var authToken = await this.authenticate()
+
+    const pieApps: any = await this.get('/pieapp/cli/list', authToken)
+    const answer = await select({
+      message: 'Select your PieApp',
+      choices: pieApps,
+    });
+
+    this.saveProjectConfig(answer);
+    console.log("\n");
+    console.log("Deploying...");
+    console.log('\n');
+    this.deploy(authToken);
+  }
+
+  public async setupNewProject() {
     fs.mkdir(pieHostDir, () => {
       var gitUrl = execSync(`cd ${projectDir} && git config --get remote.origin.url`).toString().trim()
       var projectNameComponents = projectDir.split('/')
@@ -223,21 +251,25 @@ export default class Deploy extends Command {
       }
 
       prompt.get(schema, async (_err: any, result: any) => {
-        var bcommand: any = ''
-        if (result.buildcommandneeded == 'y' || result.buildcommandneeded == 'Y') {
-          const {buildcommand} = await prompt.get({
-            properties: {
-              buildcommand: {
-                message: 'Build command',
-                required: true,
-                default: 'npm run build',
-              },
-            },
-          })
-          bcommand = buildcommand
+        if (_err) {
+          return
         }
 
         try {
+          var bcommand: any = ''
+          if (result.buildcommandneeded == 'y' || result.buildcommandneeded == 'Y') {
+            const {buildcommand} = await prompt.get({
+              properties: {
+                buildcommand: {
+                  message: 'Build command',
+                  required: true,
+                  default: 'npm run build',
+                },
+              },
+            })
+            bcommand = buildcommand
+          }
+
           const plans: any = await this.get('/pieapp/plans', null)
           const answer = await select({
             message: 'Select a plan',
@@ -273,9 +305,16 @@ export default class Deploy extends Command {
         },
       }
 
+      this.log('\n')
       this.log('Authenticating...')
+      this.log('New user? create account here: https://pie.host/register')
+      this.log('\n')
+
       this.log('This is required everytime  your deploy, for security.')
       prompt.get(schema, (_err: any, result: {email: string; password: string}) => {
+        if (_err) {
+          return
+        }
         this.post(
           '/login',
           {
