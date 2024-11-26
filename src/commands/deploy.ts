@@ -110,7 +110,7 @@ export default class Deploy extends Command {
         },
       })
 
-      if (isprivate == 'y') {
+      if (isprivate == 'y' || isprivate == 'Y') {
         console.log('\n')
         console.log('Add following deploy key in your git repository\n')
         console.log(sshKey.public_key)
