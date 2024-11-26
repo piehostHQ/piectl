@@ -62,7 +62,6 @@
       }
     }
   },
-  "repository": "piehostHQ/pie-cli",
   "scripts": {
     "build": "shx rm -rf dist && tsc -b",
     "lint": "eslint . --ext .ts",

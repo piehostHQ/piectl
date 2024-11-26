@@ -9,7 +9,7 @@ import {select, Separator} from '@inquirer/prompts'
 const apiHostProd = `https://piehost.com/api/v4`
 const apiHostDev = `http://piehost.test/api/v4`
 
-const apiHost = apiHostDev
+const apiHost = apiHostProd
 
 const projectDir = process.cwd()
 const pieHostDir = `${projectDir}/.piehost`
@@ -246,7 +246,7 @@ export default class Deploy extends Command {
             default: gitUrl,
           },
           publicdir: {
-            message: 'Public directory, please re-check this before you continue. It could be /build or /dist',
+            message: 'Public directory, should be /public, /build or /dist',
             required: true,
             default: '/',
           },
