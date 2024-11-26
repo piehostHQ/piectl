@@ -62,8 +62,8 @@ export default class Deploy extends Command {
     console.log(`If you have configured webhook, there is no need to run this command`)
     console.log(`You can see all deployments at https://pie.host`)
     console.log('\n')
-    if(authToken == null){
-      authToken = await this.authenticate()
+    if (authToken == null) {
+      authToken = await this.authenticate(null)
     }
     var projectId = this.getProjectConfig('uuid')
 
@@ -92,7 +92,7 @@ export default class Deploy extends Command {
 
   public async createPieApp(name: any, git: any, size: any, build_command: any, public_directory: any) {
     try {
-      var authToken: string = await this.authenticate()
+      var authToken: string = await this.authenticate(true)
       var sshKey = await this.get('/pieapp/sshkey', authToken)
 
       const {isprivate} = await prompt.get({
@@ -200,19 +200,21 @@ export default class Deploy extends Command {
   }
 
   public async setupExistingProject() {
-    var authToken = await this.authenticate()
+    fs.mkdir(pieHostDir, async () => {
+      var authToken = await this.authenticate(true);
 
-    const pieApps: any = await this.get('/pieapp/cli/list', authToken)
-    const answer = await select({
-      message: 'Select your PieApp',
-      choices: pieApps,
-    });
+      const pieApps: any = await this.get('/pieapp/cli/list', authToken)
+      const answer = await select({
+        message: 'Select your PieApp',
+        choices: pieApps,
+      })
 
-    this.saveProjectConfig(answer);
-    console.log("\n");
-    console.log("Deploying...");
-    console.log('\n');
-    this.deploy(authToken);
+      this.saveProjectConfig(answer)
+      console.log('\n')
+      console.log('Deploying...')
+      console.log('\n')
+      this.deploy(authToken)
+    })
   }
 
   public async setupNewProject() {
@@ -289,7 +291,7 @@ export default class Deploy extends Command {
     })
   }
 
-  public async authenticate(): Promise<string> {
+  public async authenticate(showSignupUrl: any): Promise<string> {
     return new Promise((resolve, reject) => {
       var schema = {
         properties: {
@@ -305,10 +307,14 @@ export default class Deploy extends Command {
         },
       }
 
-      this.log('\n')
-      this.log('Authenticating...')
-      this.log('New user? create account here: https://pie.host/register')
-      this.log('\n')
+      if (showSignupUrl) {
+        this.log('\n')
+        this.log('Authenticating...')
+        this.log('New user? create account here: https://pie.host/register')
+        this.log('\n')
+      } else {
+        this.log('Authenticating...')
+      }
 
       this.log('This is required everytime  your deploy, for security.')
       prompt.get(schema, (_err: any, result: {email: string; password: string}) => {
