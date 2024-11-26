@@ -68,24 +68,30 @@ export default class Deploy extends Command {
     var projectId = this.getProjectConfig('uuid')
 
     var deploy = await this.doDeploy(authToken, projectId, null, null)
-    if (deploy.id) {
+    if (deploy && deploy.id) {
       this.log(`Project deployment is scheduled!`)
       this.log(`New changes should be available soon, depending upon build time of your project.`)
       this.log(`\n`)
-    } else {
-      console.log(`Something went wrong, please contact us https://pie.host/contact`)
-    }
+    } 
   }
 
   public async doDeploy(authToken: any, uuid: any, build_command: any, public_directory: any) {
-    var deployLog = await this.post(
-      `/pieapp/${uuid}/deploy`,
-      {
-        build_command,
-        public_directory,
-      },
-      authToken,
-    )
+    try {
+      var deployLog = await this.post(
+        `/pieapp/${uuid}/deploy`,
+        {
+          build_command,
+          public_directory,
+        },
+        authToken,
+      )
+    } catch (e: any) {
+      if (e.response && e.response.data && e.response.data.message) {
+        this.log(e.response.data.message)
+      } else {
+        this.log(e.message);
+      }
+    }
 
     return deployLog
   }
@@ -161,7 +167,7 @@ export default class Deploy extends Command {
   public async deployNew(pieApp: any, build_command: any, public_directory: any, uuid: any, authToken: any) {
     var deployLog = await this.doDeploy(authToken, uuid, build_command, public_directory)
 
-    if (deployLog.id) {
+    if (deployLog && deployLog.id) {
       console.log('\n')
       console.log(`Congratulations! Your project has been deployed!`)
       console.log('\n')
@@ -201,7 +207,7 @@ export default class Deploy extends Command {
 
   public async setupExistingProject() {
     fs.mkdir(pieHostDir, async () => {
-      var authToken = await this.authenticate(true);
+      var authToken = await this.authenticate(true)
 
       const pieApps: any = await this.get('/pieapp/cli/list', authToken)
       const answer = await select({
